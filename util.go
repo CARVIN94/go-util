@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/globalsign/mgo/bson"
@@ -44,21 +45,25 @@ func PasswordCompare(pwd string, hash []byte) bool {
 }
 
 // TokenEncrypt 生成密钥
-func TokenEncrypt(key string, m map[string]interface{}) string {
+func TokenEncrypt(m jwt.MapClaims, key string) (string, bool) {
+	t := time.Now()
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := make(jwt.MapClaims)
-
+	claims["exp"] = t.Add(time.Hour * 24 * 3).Unix()
+	claims["iat"] = t.Unix()
 	for index, val := range m {
 		claims[index] = val
 	}
 	token.Claims = claims
 	tokenString, err := token.SignedString([]byte(key))
-	PanicOnError(err)
-	return tokenString
+	if err != nil {
+		return "", false
+	}
+	return tokenString, true
 }
 
-// PasswordDecrypt 解析密钥
-func PasswordDecrypt(tokenString string, key string) (interface{}, bool) {
+// TokenDecrypt 解析密钥
+func TokenDecrypt(tokenString string, key string) (jwt.MapClaims, bool) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -67,8 +72,7 @@ func PasswordDecrypt(tokenString string, key string) (interface{}, bool) {
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, true
-	} else {
-		fmt.Println(err)
-		return "", false
 	}
+	fmt.Println(err)
+	return jwt.MapClaims{}, false
 }
