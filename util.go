@@ -16,8 +16,8 @@ func PanicOnError(err error) {
 	}
 }
 
-// ObjectIds []string to []bson.ObjectId
-func ObjectIds(strArr []string) (arr []bson.ObjectId) {
+// ObjectIdsHexInArray []string to []bson.ObjectId
+func ObjectIdsHexInArray(strArr []string) (arr []bson.ObjectId) {
 	if len(strArr) == 0 {
 		return arr
 	}
